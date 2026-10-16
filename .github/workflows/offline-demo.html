@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline Profile Manager Demo</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#10213a;background:#f5f7fb}
+*{box-sizing:border-box}body{margin:0;padding:22px;max-width:720px;margin-inline:auto}
+h1{font-size:28px;margin:4px 0}p{line-height:1.45}.sub{color:#536074;font-size:14px}
+.notice{background:#e1ecff;padding:13px;border-radius:12px;font-size:13px}
+button{border:0;border-radius:10px;background:#2563eb;color:white;font-weight:650;padding:12px 15px;font-size:15px}
+button.secondary{background:#e8edf5;color:#10213a}button.danger{background:#a52828}
+input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white;margin:5px 0 12px}
+.card{background:white;border-radius:13px;padding:15px;margin:12px 0;box-shadow:0 2px 9px #10213a12}
+.name{font-weight:750;font-size:18px}.meta{color:#2563eb;font-size:13px;margin:5px 0}.actions{display:flex;gap:8px;justify-content:flex-end}
+form{background:white;padding:15px;border-radius:13px;margin-top:14px;display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}
+</style>
+</head>
+<body>
+<h1>Profile Manager</h1>
+<p class="sub">Offline demo • records are saved in this browser on this device</p>
+<div class="notice">This demo stores profile notes locally. It does not create, sign in to, or control real social-media accounts.</div>
+<p><button id="addBtn">+ Add profile</button></p>
+<form id="profileForm">
+  <h3 id="formTitle">Add profile</h3>
+  <label>Platform</label>
+  <select id="platform"><option>Facebook Page</option><option>Instagram</option><option>LinkedIn</option><option>TikTok</option><option>Other</option></select>
+  <label>Display name *</label><input id="name" required placeholder="e.g. My Small Business">
+  <label>Username or profile ID</label><input id="handle" placeholder="Optional">
+  <label>Notes</label><textarea id="notes" rows="3" placeholder="Optional notes"></textarea>
+  <div class="row"><button type="submit">Save profile</button><button class="secondary" type="button" id="cancelBtn">Cancel</button></div>
+</form>
+<h3 id="count">Saved profiles (0)</h3>
+<div id="profiles"></div>
+<p><button class="danger" id="clearBtn">Clear all demo profiles</button></p>
+<script>
+const key='offline-profile-manager-v1'; let profiles=[]; let editing=null;
+const $=id=>document.getElementById(id);
+try{profiles=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){profiles=[]}
+function persist(){localStorage.setItem(key,JSON.stringify(profiles));render()}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ $('count').textContent=`Saved profiles (${profiles.length})`;
+ $('profiles').innerHTML=profiles.length?profiles.map(p=>`<article class="card"><div class="name">${esc(p.name)}</div><div class="meta">${esc(p.platform)} • ${esc(p.handle||'No username added')}</div>${p.notes?`<p>${esc(p.notes)}</p>`:''}<div class="actions"><button class="secondary" onclick="editProfile('${p.id}')">Edit</button><button class="danger" onclick="deleteProfile('${p.id}')">Delete</button></div></article>`).join(''):'<div class="card sub">No profiles yet. Tap “Add profile” to create your first local record.</div>';
+}
+function openForm(p=null){editing=p?.id||null;$('formTitle').textContent=p?'Edit profile':'Add profile';$('platform').value=p?.platform||'Facebook Page';$('name').value=p?.name||'';$('handle').value=p?.handle||'';$('notes').value=p?.notes||'';$('profileForm').style.display='block';$('name').focus()}
+function editProfile(id){openForm(profiles.find(p=>p.id===id))}
+function deleteProfile(id){if(confirm('Delete this local profile record?')){profiles=profiles.filter(p=>p.id!==id);persist()}}
+$('addBtn').onclick=()=>openForm();
+$('cancelBtn').onclick=()=>{$('profileForm').style.display='none'};
+$('profileForm').onsubmit=e=>{e.preventDefault();const item={id:editing||String(Date.now()),platform:$('platform').value,name:$('name').value.trim(),handle:$('handle').value.trim(),notes:$('notes').value.trim()};if(!item.name)return;if(editing)profiles=profiles.map(p=>p.id===editing?item:p);else profiles.unshift(item);persist();$('profileForm').style.display='none'};
+$('clearBtn').onclick=()=>{if(confirm('Remove all locally saved demo records?')){profiles=[];persist()}};
+render();
+</script>
+</body>
+</html>
